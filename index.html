@@ -229,9 +229,15 @@
     .splice-rich-editor-shell { width: 100%; }
     .splice-rich-editor-toolbar { display: flex; margin: -12px 0 18px; padding-bottom: 14px; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid #EEF0F3; }
     .splice-rich-editor-toolbar__hint { color: #8A9099; font-size: 13px; line-height: 22px; }
+    .splice-rich-editor-toolbar__actions { display: flex; flex: 0 0 auto; align-items: center; gap: 8px; }
     .splice-rich-editor-toolbar .el-button { flex: 0 0 auto; border-radius: 8px; }
+    .splice-rich-editor-toolbar .splice-delete-image-button { color: #F56C6C; }
+    .splice-rich-editor-toolbar .splice-delete-image-button:hover, .splice-rich-editor-toolbar .splice-delete-image-button:focus { color: #F04444; background: #FFF1F0; }
+    .splice-hidden-file-input { display: none; }
     .splice-rich-content { min-height: 360px; }
     .splice-rich-content img.splice-rich-inline-image { display: inline-block; width: 46px; height: 46px; margin: 1px 7px; padding: 2px; border: 1px solid #DDE1E8; border-radius: 10px; background: #fff; object-fit: cover; vertical-align: middle; }
+    .splice-rich-editor img.splice-rich-inline-image { cursor: pointer; }
+    .splice-rich-editor img.splice-rich-inline-image.is-selected { outline: 2px solid #F56C6C; outline-offset: 2px; }
     .splice-rich-editor { min-height: 410px; outline: none; cursor: text; }
     .splice-rich-editor:focus { background: #FCFDFF; box-shadow: inset 0 0 0 1px #DDE9FF; }
     .splice-natural-prompt .splice-inline-image { display: inline-flex; width: 46px; height: 46px; margin: 1px 7px; padding: 2px; vertical-align: middle; border-radius: 10px; }
@@ -492,10 +498,14 @@
                     <div class="splice-prompt-surface">
                       <div v-if="splicedEditing" class="splice-rich-editor-shell">
                         <div class="splice-rich-editor-toolbar">
-                          <span class="splice-rich-editor-toolbar__hint">整段文字均可在任意位置增删改；支持直接粘贴图片</span>
-                          <el-button size="mini" icon="el-icon-picture-outline" @click="addSpliceImageByUrl">通过链接添加图片</el-button>
+                          <span class="splice-rich-editor-toolbar__hint">整段文字均可编辑；图片可粘贴或上传到当前光标处，点击图片可删除</span>
+                          <div class="splice-rich-editor-toolbar__actions">
+                            <el-button v-if="spliceSelectedImage" size="mini" type="text" class="splice-delete-image-button" icon="el-icon-delete" @click="deleteSelectedSpliceImage">删除选中图片</el-button>
+                            <el-button size="mini" icon="el-icon-upload2" @click="openSpliceLocalImage">上传本地图片</el-button>
+                            <input ref="spliceImageInput" class="splice-hidden-file-input" type="file" accept="image/*" @change="handleSpliceImageFile">
+                          </div>
                         </div>
-                        <div ref="spliceRichEditor" class="splice-natural-prompt splice-rich-content splice-rich-editor" contenteditable="true" spellcheck="false" @paste="handleSpliceRichPaste" v-html="spliceRichDraftHtml"></div>
+                        <div ref="spliceRichEditor" class="splice-natural-prompt splice-rich-content splice-rich-editor" contenteditable="true" spellcheck="false" @click="handleSpliceRichClick" @focus="captureSpliceInsertRange" @input="captureSpliceInsertRange" @keydown="handleSpliceRichKeydown" @keyup="captureSpliceInsertRange" @mouseup="captureSpliceInsertRange" @paste="handleSpliceRichPaste" v-html="spliceRichDraftHtml"></div>
                       </div>
                       <div v-else class="splice-natural-prompt splice-rich-content splice-rich-view" v-html="spliceRichHtml"></div>
                     </div>
@@ -673,7 +683,7 @@
           planningMessage: '请填写企划需求；关键操作后自动保存。', planningMessageType: 'info',
           promptLoading: false, imageLoading: false, showRetryButton: false, promptDialogVisible: false, previewDialogVisible: false,
           acceptanceVisible: false, detailDrawerVisible: false, refineDrawerVisible: false, historyDrawerVisible: false,
-          activePrompt: '', activePromptItemId: '', previewImage: '', previewImageName: '', promptMode: 'ai', splicedPrompt: '', spliceRichHtml: '', spliceRichDraftHtml: '', splicedEditing: false, spliceScheme:{category:'',need:'',references:[],textReferences:[],directions:[],constraints:[],forbidden:[]}, spliceEditDraft:{category:'',need:'',references:[],textReferences:[],directions:[],constraints:[],forbidden:[]}, promptPlanningFingerprints:{ai:'',splice:''}, promptOutdatedToastReady:false, promptStorageKey: 'ai-product-design-v12-empty-state-prompt-results', imageScenario: 'success', creativeMessage: '本次计划生成 3 张，成功 3 张，失败 0 张。', creativeMessageType: 'success', failedImageCount: 0,
+          activePrompt: '', activePromptItemId: '', previewImage: '', previewImageName: '', promptMode: 'ai', splicedPrompt: '', spliceRichHtml: '', spliceRichDraftHtml: '', spliceSelectedImage: false, splicedEditing: false, spliceScheme:{category:'',need:'',references:[],textReferences:[],directions:[],constraints:[],forbidden:[]}, spliceEditDraft:{category:'',need:'',references:[],textReferences:[],directions:[],constraints:[],forbidden:[]}, promptPlanningFingerprints:{ai:'',splice:''}, promptOutdatedToastReady:false, promptStorageKey: 'ai-product-design-v12-empty-state-prompt-results', imageScenario: 'success', creativeMessage: '本次计划生成 3 张，成功 3 张，失败 0 张。', creativeMessageType: 'success', failedImageCount: 0,
           categories: ['内裤','文胸','袜子','吊带'], directionOptions: ['少女感','清新耐看','几何撞色','休闲字母'], constraintOptions: ['车缝','随心裁','精梳棉混纺','基础色'], forbiddenOptions: ['复杂印花','浮夸 Logo','禁止与竞品完全一致','禁止人体穿着展示','禁止文字内容','禁止浮夸Logo','禁止竞品复刻','禁止非指定品牌标识'],
           imageKinds: [{key:'sketch',label:'线稿'},{key:'competitor',label:'竞品'},{key:'creative',label:'创意'}],
           planning: { category:'内裤', need:'', competitor:'', directions:[], constraints:[], forbidden:[], images:{sketch:'',competitor:'',creative:''}, imagePreviews:{sketch:'',competitor:'',creative:''}, imageNotes:{sketch:'',competitor:'',creative:''} },
@@ -846,19 +856,30 @@
           return box.innerHTML;
         },
         spliceRichPlainText: function(html){ var box=document.createElement('div');box.innerHTML=html||'';Array.prototype.forEach.call(box.querySelectorAll('img'),function(image){image.replaceWith(document.createTextNode('【参考图片】'));});return (box.innerText||box.textContent||'').replace(/\u00a0/g,' ').replace(/[ \t]+/g,' ').replace(/\n{3,}/g,'\n\n').trim(); },
+        readSpliceImageFile: function(file,successMessage){
+          if(!file||!/^image\//i.test(file.type||'')){this.$message.error('请选择图片文件');this.splicePendingRange=null;return;}
+          if(file.size>10*1024*1024){this.$message.error('图片大小不能超过 10MB');this.splicePendingRange=null;return;}
+          var self=this;var reader=new FileReader();reader.onload=function(loadEvent){self.insertSpliceRichImage(loadEvent.target.result,file.name||'新增参考图片');self.$message.success(successMessage||'图片已插入方案');};reader.onerror=function(){self.splicePendingRange=null;self.$message.error('图片读取失败，请重新选择');};reader.readAsDataURL(file);
+        },
         handleSpliceRichPaste: function(event){
           var clipboard=event.clipboardData||window.clipboardData;var items=clipboard&&clipboard.items?Array.prototype.slice.call(clipboard.items):[];var imageItem=items.find(function(item){return item.type&&item.type.indexOf('image/')===0;});
-          if(imageItem){event.preventDefault();var file=imageItem.getAsFile();if(!file)return;var self=this;var reader=new FileReader();reader.onload=function(loadEvent){self.insertSpliceRichImage(loadEvent.target.result,'粘贴的参考图片');self.$message.success('图片已粘贴到方案中');};reader.readAsDataURL(file);return;}
+          if(imageItem){event.preventDefault();this.captureSpliceInsertRange();this.readSpliceImageFile(imageItem.getAsFile(),'图片已粘贴到当前光标处');return;}
           if(clipboard){event.preventDefault();document.execCommand('insertText',false,clipboard.getData('text/plain'));}
         },
         captureSpliceInsertRange: function(){ var editor=this.$refs.spliceRichEditor;var selection=window.getSelection();this.splicePendingRange=selection&&selection.rangeCount&&editor&&editor.contains(selection.anchorNode)?selection.getRangeAt(0).cloneRange():null; },
+        clearSpliceImageSelection: function(){ var editor=this.$refs.spliceRichEditor;if(editor)Array.prototype.forEach.call(editor.querySelectorAll('img.is-selected'),function(image){image.classList.remove('is-selected');});this.spliceSelectedImage=false; },
+        selectSpliceRichImage: function(image){ var editor=this.$refs.spliceRichEditor;if(!editor||!image)return;this.clearSpliceImageSelection();image.classList.add('is-selected');this.spliceSelectedImage=true;var selection=window.getSelection();var range=document.createRange();range.selectNode(image);selection.removeAllRanges();selection.addRange(range);this.splicePendingRange=range.cloneRange(); },
+        handleSpliceRichClick: function(event){ if(event.target&&event.target.tagName==='IMG'){event.preventDefault();this.selectSpliceRichImage(event.target);}else this.clearSpliceImageSelection(); },
+        handleSpliceRichKeydown: function(event){ if(this.spliceSelectedImage&&(event.key==='Delete'||event.key==='Backspace')){event.preventDefault();this.deleteSelectedSpliceImage();} },
+        deleteSelectedSpliceImage: function(){
+          var editor=this.$refs.spliceRichEditor;var image=editor&&editor.querySelector('img.is-selected');if(!image){this.spliceSelectedImage=false;return;}var previous=image.previousSibling;var next=image.nextSibling;if(previous&&previous.nodeType===3&&!previous.nodeValue.replace(/\u00a0/g,'').trim())previous.parentNode.removeChild(previous);if(next&&next.nodeType===3&&!next.nodeValue.replace(/\u00a0/g,'').trim())next.parentNode.removeChild(next);if(image.parentNode)image.parentNode.removeChild(image);this.spliceSelectedImage=false;editor.focus();this.$message.success('图片已从方案中删除');
+        },
         insertSpliceRichImage: function(src,alt){
           var editor=this.$refs.spliceRichEditor;if(!editor)return;var image=document.createElement('img');image.src=src;image.alt=alt||'新增参考图片';image.className='splice-rich-inline-image';var before=document.createTextNode('\u00a0');var after=document.createTextNode('\u00a0');var fragment=document.createDocumentFragment();fragment.appendChild(before);fragment.appendChild(image);fragment.appendChild(after);
-          var range=this.splicePendingRange;var selection=window.getSelection();if(!range&&selection&&selection.rangeCount&&editor.contains(selection.anchorNode))range=selection.getRangeAt(0);if(range&&editor.contains(range.commonAncestorContainer)){range.deleteContents();range.insertNode(fragment);range.setStartAfter(after);range.collapse(true);selection.removeAllRanges();selection.addRange(range);}else{editor.appendChild(fragment);this.placeSpliceCaretAtEnd(editor);}this.splicePendingRange=null;editor.focus();
+          var range=this.splicePendingRange;var selection=window.getSelection();if(!range&&selection&&selection.rangeCount&&editor.contains(selection.anchorNode))range=selection.getRangeAt(0);if(range&&editor.contains(range.commonAncestorContainer)){range.deleteContents();range.insertNode(fragment);range.setStartAfter(after);range.collapse(true);selection.removeAllRanges();selection.addRange(range);}else{editor.appendChild(fragment);this.placeSpliceCaretAtEnd(editor);}this.splicePendingRange=null;editor.focus();this.selectSpliceRichImage(image);
         },
-        addSpliceImageByUrl: function(){
-          var self=this;this.captureSpliceInsertRange();this.$prompt('请输入可公开访问的图片链接','通过链接添加图片',{confirmButtonText:'插入图片',cancelButtonText:'取消',inputPlaceholder:'https://example.com/image.jpg',inputPattern:/^https?:\/\/.+/i,inputErrorMessage:'请输入以 http:// 或 https:// 开头的图片链接'}).then(function(result){self.insertSpliceRichImage(result.value.trim(),'链接参考图片');self.$message.success('图片已插入方案');}).catch(function(){self.splicePendingRange=null;});
-        },
+        openSpliceLocalImage: function(){ if(!this.splicePendingRange){var editor=this.$refs.spliceRichEditor;if(editor){editor.focus();this.placeSpliceCaretAtEnd(editor);this.captureSpliceInsertRange();}}var input=this.$refs.spliceImageInput;if(input){input.value='';input.click();} },
+        handleSpliceImageFile: function(event){ var file=event.currentTarget&&event.currentTarget.files&&event.currentTarget.files[0];if(!file){this.splicePendingRange=null;return;}this.readSpliceImageFile(file,'本地图片已插入当前光标处');event.currentTarget.value=''; },
         buildSplicedPrompt: function(){ return this.buildSplicedPromptFromScheme(this.createSpliceSchemeFromPlanning()); },
         openSplicedPrompt: function(){
           if(this.isViewer){this.$message.error('暂无权限执行此操作，请联系管理员');return;}
@@ -877,8 +898,8 @@
           this.persistPromptResults();
           this.$message.success('拼接提示词已生成并保存');
         },
-        beginSpliceEdit: function(){ var self=this;if(this.isViewer){this.$message.error('暂无权限执行此操作，请联系管理员');return;}this.spliceRichDraftHtml=this.spliceRichHtml||this.buildSpliceRichHtmlFromScheme(this.spliceScheme);this.splicedEditing=true;this.$nextTick(function(){var editor=self.$refs.spliceRichEditor;if(editor){editor.focus();self.placeSpliceCaretAtEnd(editor);}}); },
-        cancelSpliceEdit: function(){ this.spliceRichDraftHtml=this.spliceRichHtml;this.splicePendingRange=null;this.splicedEditing=false;this.$message.info('已取消编辑，方案内容未变更'); },
+        beginSpliceEdit: function(){ var self=this;if(this.isViewer){this.$message.error('暂无权限执行此操作，请联系管理员');return;}this.spliceRichDraftHtml=this.spliceRichHtml||this.buildSpliceRichHtmlFromScheme(this.spliceScheme);this.spliceSelectedImage=false;this.splicedEditing=true;this.$nextTick(function(){var editor=self.$refs.spliceRichEditor;if(editor){editor.focus();self.placeSpliceCaretAtEnd(editor);self.captureSpliceInsertRange();}}); },
+        cancelSpliceEdit: function(){ this.spliceRichDraftHtml=this.spliceRichHtml;this.splicePendingRange=null;this.spliceSelectedImage=false;this.splicedEditing=false;this.$message.info('已取消编辑，方案内容未变更'); },
         placeSpliceCaretAtEnd: function(element){ var selection=window.getSelection();var range=document.createRange();range.selectNodeContents(element);range.collapse(false);selection.removeAllRanges();selection.addRange(range); },
         saveSplicedPrompt: function(){
           var editor=this.$refs.spliceRichEditor;var cleanHtml=this.sanitizeSpliceRichHtml(editor?editor.innerHTML:this.spliceRichDraftHtml);var plainText=this.spliceRichPlainText(cleanHtml);var probe=document.createElement('div');probe.innerHTML=cleanHtml;
@@ -887,6 +908,7 @@
           this.spliceRichDraftHtml=cleanHtml;
           this.splicedPrompt=plainText;
           this.splicePendingRange=null;
+          this.spliceSelectedImage=false;
           this.splicedEditing=false;
           this.persistPromptResults();
           this.$message.success('拼接方案已保存');
