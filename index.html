@@ -232,6 +232,7 @@
     .splice-rich-editor-toolbar .el-button { flex: 0 0 auto; border-radius: 8px; }
     .splice-hidden-file-input { display: none; }
     .splice-rich-content { min-height: 360px; }
+    .splice-rich-content strong { font-weight: 700; }
     .splice-rich-content img.splice-rich-inline-image { display: inline-block; width: 46px; height: 46px; margin: 1px 7px; padding: 2px; border: 1px solid #DDE1E8; border-radius: 10px; background: #fff; object-fit: cover; vertical-align: middle; }
     .splice-rich-image-wrap { position: relative; display: inline-flex; width: 54px; height: 54px; margin: 0 3px; align-items: center; justify-content: center; vertical-align: middle; line-height: normal; }
     .splice-rich-image-wrap img.splice-rich-inline-image { width: 46px; height: 46px; margin: 0; flex: 0 0 46px; }
@@ -734,7 +735,7 @@
       watch: {
         isCurrentPromptOutdated: function(isOutdated,wasOutdated){ if(this.promptOutdatedToastReady&&isOutdated&&!wasOutdated)this.$message.warning('企划输入已修改，当前方案待更新'); }
       },
-      created: function(){ var self=this;this.restorePromptResults();this.$nextTick(function(){self.promptOutdatedToastReady=true;}); },
+      created: function(){ var self=this;this.restorePromptResults();if(this.hasSplicedPrompt){this.spliceRichHtml=this.emphasizeSpliceTagWords(this.spliceRichHtml,this.spliceScheme);this.spliceRichDraftHtml=this.spliceRichHtml;this.splicedPrompt=this.spliceRichPlainText(this.spliceRichHtml);this.persistPromptResults();}this.$nextTick(function(){self.promptOutdatedToastReady=true;}); },
       methods: {
         goPage: function(page){ if(page==='creative'&&!this.creatives.length){this.$message.warning('请先在企划输入中生成至少 1 张成功创意图');return;} this.currentPage=page;this.activeMenu=page==='history'?'history':'product'; },
         startNewDesign: function(){
@@ -831,15 +832,19 @@
           return prompts[item]||'围绕该标签补充清晰、可执行的视觉与工艺要求';
         },
         spliceTagDetailedText: function(item){ return item+'（'+this.spliceTagPrompt(item)+'）'; },
+        spliceTagDetailedHtml: function(item){ return '<strong>'+this.escapeSpliceRichText(item)+'</strong>（'+this.escapeSpliceRichText(this.spliceTagPrompt(item))+'）'; },
+        emphasizeSpliceTagWords: function(html,scheme){
+          var box=document.createElement('div');box.innerHTML=html||'';var tags=[];['directions','constraints','forbidden'].forEach(function(key){(scheme&&Array.isArray(scheme[key])?scheme[key]:[]).forEach(function(item){if(item&&tags.indexOf(item)===-1)tags.push(item);});});if(!tags.length)return box.innerHTML;tags.sort(function(a,b){return b.length-a.length;});var pattern=new RegExp('('+tags.map(function(item){return item.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}).join('|')+')(?=[（(])','g');var walker=document.createTreeWalker(box,NodeFilter.SHOW_TEXT,null,false);var nodes=[];var node;while((node=walker.nextNode()))nodes.push(node);nodes.forEach(function(textNode){if(textNode.parentNode&&textNode.parentNode.closest&&textNode.parentNode.closest('strong'))return;var value=textNode.nodeValue||'';pattern.lastIndex=0;var matches=[];var match;while((match=pattern.exec(value)))matches.push({index:match.index,text:match[0],end:pattern.lastIndex});if(!matches.length)return;var fragment=document.createDocumentFragment();var cursor=0;matches.forEach(function(item){if(item.index>cursor)fragment.appendChild(document.createTextNode(value.slice(cursor,item.index)));var strong=document.createElement('strong');strong.textContent=item.text;fragment.appendChild(strong);cursor=item.end;});if(cursor<value.length)fragment.appendChild(document.createTextNode(value.slice(cursor)));textNode.parentNode.replaceChild(fragment,textNode);});return box.innerHTML;
+        },
         buildSpliceRichHtmlFromScheme: function(scheme){
           var self=this;var parts=[];var esc=function(value){return self.escapeSpliceRichText(value);};
           parts.push('本次设计品类为'+esc(scheme.category)+'，企划需求是'+esc(scheme.need)+'。');
           var images={},notes={};(scheme.references||[]).forEach(function(item){images[item.key]=item;});(scheme.textReferences||[]).forEach(function(item){notes[item.key]=item;});
           var rows=this.imageKinds.map(function(kind){var image=images[kind.key];var note=notes[kind.key]&&notes[kind.key].note?notes[kind.key].note.trim():'';return image||note?{key:kind.key,label:kind.label,image:image,note:note}:null;}).filter(Boolean);
           if(rows.length){var referenceParts=rows.map(function(item,index){var wording=self.spliceReferenceWording(item.key,index>0);if(item.image){var src=self.escapeSpliceRichAttribute(item.image.preview||self.referencePlaceholder(item.label));var imageHtml=esc(wording.imageLead)+'<img class="splice-rich-inline-image" src="'+src+'" alt="'+self.escapeSpliceRichAttribute(item.label+'参考图')+'">'+esc(wording.imageTail);return item.note?imageHtml+'，'+esc(wording.noteLead+item.note):imageHtml;}return esc(wording.noteLead+item.note);});parts.push(referenceParts.join('；')+'。');}
-          if((scheme.directions||[]).length)parts.push('创意方向聚焦'+scheme.directions.map(function(item){return esc(self.spliceTagDetailedText(item));}).join('、')+((scheme.constraints||[]).length||(scheme.forbidden||[]).length?'；':'。'));
-          if((scheme.constraints||[]).length)parts.push('工艺与面料上采用'+scheme.constraints.map(function(item){return esc(self.spliceTagDetailedText(item));}).join('、')+'做法'+((scheme.forbidden||[]).length?'；':'。'));
-          if((scheme.forbidden||[]).length)parts.push('禁止项包含'+scheme.forbidden.map(function(item){return esc(self.spliceTagDetailedText(item));}).join('、')+'。');
+          if((scheme.directions||[]).length)parts.push('创意方向聚焦'+scheme.directions.map(function(item){return self.spliceTagDetailedHtml(item);}).join('、')+((scheme.constraints||[]).length||(scheme.forbidden||[]).length?'；':'。'));
+          if((scheme.constraints||[]).length)parts.push('工艺与面料上采用'+scheme.constraints.map(function(item){return self.spliceTagDetailedHtml(item);}).join('、')+'做法'+((scheme.forbidden||[]).length?'；':'。'));
+          if((scheme.forbidden||[]).length)parts.push('禁止项包含'+scheme.forbidden.map(function(item){return self.spliceTagDetailedHtml(item);}).join('、')+'。');
           return parts.join('');
         },
         sanitizeSpliceRichHtml: function(html){
@@ -902,7 +907,7 @@
         cancelSpliceEdit: function(){ this.spliceRichDraftHtml=this.spliceRichHtml;this.splicePendingRange=null;this.splicedEditing=false;this.$message.info('已取消编辑，方案内容未变更'); },
         placeSpliceCaretAtEnd: function(element){ var selection=window.getSelection();var range=document.createRange();range.selectNodeContents(element);range.collapse(false);selection.removeAllRanges();selection.addRange(range); },
         saveSplicedPrompt: function(){
-          var editor=this.$refs.spliceRichEditor;var rawHtml=editor?this.serializeSpliceEditorHtml(editor):this.spliceRichDraftHtml;var cleanHtml=this.sanitizeSpliceRichHtml(rawHtml);var plainText=this.spliceRichPlainText(cleanHtml);var probe=document.createElement('div');probe.innerHTML=cleanHtml;
+          var editor=this.$refs.spliceRichEditor;var rawHtml=editor?this.serializeSpliceEditorHtml(editor):this.spliceRichDraftHtml;var cleanHtml=this.emphasizeSpliceTagWords(this.sanitizeSpliceRichHtml(rawHtml),this.spliceScheme);var plainText=this.spliceRichPlainText(cleanHtml);var probe=document.createElement('div');probe.innerHTML=cleanHtml;
           if(!plainText&&!probe.querySelector('img')){this.$message.error('方案内容不能为空');return;}
           this.spliceRichHtml=cleanHtml;
           this.spliceRichDraftHtml=cleanHtml;
