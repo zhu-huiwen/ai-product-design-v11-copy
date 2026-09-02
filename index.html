@@ -736,10 +736,10 @@
       watch: {
         isCurrentPromptOutdated: function(isOutdated,wasOutdated){ if(this.promptOutdatedToastReady&&isOutdated&&!wasOutdated)this.$message.warning('企划输入已修改，当前方案待更新'); }
       },
-      created: function(){ var self=this;this.restorePromptResults();if(this.hasSplicedPrompt){this.spliceRichHtml=this.emphasizeSpliceTagWords(this.spliceRichHtml,this.spliceScheme);this.spliceRichDraftHtml=this.spliceRichHtml;this.splicedPrompt=this.spliceRichPlainText(this.spliceRichHtml);this.persistPromptResults();}this.$nextTick(function(){self.promptOutdatedToastReady=true;}); },
+      created: function(){ var self=this;this.startNewDesign(true);this.$nextTick(function(){self.promptOutdatedToastReady=true;}); },
       methods: {
         goPage: function(page){ if(page==='creative'&&!this.creatives.length){this.$message.warning('请先在企划输入中生成至少 1 张成功创意图');return;} this.currentPage=page;this.activeMenu=page==='history'?'history':'product'; },
-        startNewDesign: function(){
+        startNewDesign: function(silent){
           this.currentPage='planning';
           this.activeMenu='product';
           this.promptMode='ai';
@@ -757,9 +757,9 @@
           this.planningStep=0;
           this.planning={category:'内裤',need:'',competitor:'',directions:[],constraints:[],forbidden:[],images:{sketch:'',competitor:'',creative:''},imagePreviews:{sketch:'',competitor:'',creative:''},imageNotes:{sketch:'',competitor:'',creative:''}};
           try{localStorage.removeItem(this.promptStorageKey);}catch(e){}
-          this.planningMessage='已进入新设计，请填写企划需求后生成提示词。';
-          this.planningMessageType='success';
-          this.$message.success('已进入新设计');
+          this.planningMessage=silent?'请填写企划需求；关键操作后自动保存。':'已进入新设计，请填写企划需求后生成提示词。';
+          this.planningMessageType=silent?'info':'success';
+          if(!silent)this.$message.success('已进入新设计');
         },
         handleRoleChange: function(){ this.$message[this.isViewer?'warning':'success'](this.isViewer?'已切换只读访客：生成、复制、精修和继续设计不可用':'已切换设计师角色'); },
         toggleDirection: function(item){ if(this.isViewer){this.$message.error('暂无权限执行此操作，请联系管理员');return;}item.selected=!item.selected;this.persistPromptResults(); },
