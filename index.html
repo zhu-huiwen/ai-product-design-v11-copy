@@ -226,6 +226,14 @@
     .splice-card__actions .splice-action-button.el-button:hover, .splice-card__actions .splice-action-button.el-button:focus { border-color: #B9C1CC; color: #303133; background: #FAFBFC; }
     .splice-prompt-surface { min-height: 500px; margin-top: 24px; padding: 30px 28px; border: 1px solid #E1E5EC; border-radius: 10px; background: #fff; font-weight: 400; }
     .splice-natural-prompt { margin: 0; color: #24272C; font-size: 17px; line-height: 34px; overflow-wrap: anywhere; white-space: normal; word-break: break-all; }
+    .splice-rich-editor-shell { width: 100%; }
+    .splice-rich-editor-toolbar { display: flex; margin: -12px 0 18px; padding-bottom: 14px; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid #EEF0F3; }
+    .splice-rich-editor-toolbar__hint { color: #8A9099; font-size: 13px; line-height: 22px; }
+    .splice-rich-editor-toolbar .el-button { flex: 0 0 auto; border-radius: 8px; }
+    .splice-rich-content { min-height: 360px; }
+    .splice-rich-content img.splice-rich-inline-image { display: inline-block; width: 46px; height: 46px; margin: 1px 7px; padding: 2px; border: 1px solid #DDE1E8; border-radius: 10px; background: #fff; object-fit: cover; vertical-align: middle; }
+    .splice-rich-editor { min-height: 410px; outline: none; cursor: text; }
+    .splice-rich-editor:focus { background: #FCFDFF; box-shadow: inset 0 0 0 1px #DDE9FF; }
     .splice-natural-prompt .splice-inline-image { display: inline-flex; width: 46px; height: 46px; margin: 1px 7px; padding: 2px; vertical-align: middle; border-radius: 10px; }
     .splice-natural-prompt .splice-inline-image img { border-radius: 7px; }
     .splice-natural-prompt .splice-token { height: 32px; margin: 2px 5px; padding: 0 11px; vertical-align: middle; border-radius: 8px; font-size: 14px; line-height: 30px; }
@@ -482,7 +490,14 @@
                       </div>
                     </div>
                     <div class="splice-prompt-surface">
-                      <p :class="['splice-natural-prompt',{'is-editing':splicedEditing}]"><span>本次设计品类为{{ activeSpliceScheme.category }}，企划需求是</span><span v-if="splicedEditing" class="splice-direct-edit" contenteditable="true" spellcheck="false" data-splice-edit-field="need" data-placeholder="请输入企划需求" @input="limitSpliceEditable($event,500)" @blur="commitSpliceDraftNeed" @paste="pasteSplicePlainText" @keydown.enter.prevent>{{ spliceEditDraft.need }}</span><span v-else>{{ spliceScheme.need }}</span><span>。</span><template v-if="activeSpliceReferenceGroups.length"><template v-for="(item,index) in activeSpliceReferenceGroups"><template v-if="item.preview"><span>{{ item.imageLead }}</span><span v-if="splicedEditing" class="splice-edit-image-wrap"><button type="button" class="splice-inline-image" :aria-label="'查看'+item.label+'参考图片'" @click="previewSpliceReference(item)"><img :src="item.preview" :alt="item.label+'参考图'"></button><button type="button" class="splice-edit-image-remove" :aria-label="'删除'+item.label+'参考图片'" @click="removeSpliceDraftReference(item.key)">×</button></span><button v-else type="button" class="splice-inline-image" :aria-label="'查看'+item.label+'参考图片'" @click="previewSpliceReference(item)"><img :src="item.preview" :alt="item.label+'参考图'"></button><span>{{ item.imageTail }}</span><template v-if="item.noteItem||item.note"><span>，{{ item.noteLead }}</span><span v-if="splicedEditing" class="splice-direct-edit" contenteditable="true" spellcheck="false" :data-splice-note-key="item.key" data-placeholder="补充参考说明" @input="limitSpliceEditable($event,300)" @blur="commitSpliceDraftNote(item.noteItem,$event)" @paste="pasteSplicePlainText" @keydown.enter.prevent>{{ item.note }}</span><span v-else>{{ item.note }}</span><button v-if="splicedEditing" type="button" class="splice-edit-note-remove" :aria-label="'删除'+item.label+'参考说明'" @click="removeSpliceDraftTextReference(item.key)">×</button></template><el-button v-else-if="splicedEditing" type="text" class="splice-add-note" @click="addSpliceDraftTextReference(item.key,item.label)">添加说明</el-button></template><template v-else><span>{{ item.noteLead }}</span><span v-if="splicedEditing" class="splice-direct-edit" contenteditable="true" spellcheck="false" :data-splice-note-key="item.key" data-placeholder="补充参考说明" @input="limitSpliceEditable($event,300)" @blur="commitSpliceDraftNote(item.noteItem,$event)" @paste="pasteSplicePlainText" @keydown.enter.prevent>{{ item.note }}</span><span v-else>{{ item.note }}</span><button v-if="splicedEditing" type="button" class="splice-edit-note-remove" :aria-label="'删除'+item.label+'参考说明'" @click="removeSpliceDraftTextReference(item.key)">×</button></template><span>{{ index===activeSpliceReferenceGroups.length-1 ? '。' : '；' }}</span></template></template><template v-if="activeSpliceScheme.directions.length"><span>创意方向聚焦</span><template v-for="item in activeSpliceScheme.directions"><button v-if="splicedEditing" :key="'direction-edit-'+item" type="button" class="splice-token" @click="removeSpliceDraftTag('directions',item)">{{ item }}<span class="splice-token__close">×</span></button><span v-else :key="'direction-view-'+item" class="splice-token">{{ item }}</span></template><span>{{ activeSpliceScheme.constraints.length||activeSpliceScheme.forbidden.length ? '；' : '。' }}</span></template><template v-if="activeSpliceScheme.constraints.length"><span>工艺与面料上采用</span><template v-for="item in activeSpliceScheme.constraints"><button v-if="splicedEditing" :key="'constraint-edit-'+item" type="button" class="splice-token" @click="removeSpliceDraftTag('constraints',item)">{{ item }}<span class="splice-token__close">×</span></button><span v-else :key="'constraint-view-'+item" class="splice-token">{{ item }}</span></template><span>做法{{ activeSpliceScheme.forbidden.length ? '；' : '。' }}</span></template><template v-if="activeSpliceScheme.forbidden.length"><span>禁止项包含</span><template v-for="item in activeSpliceScheme.forbidden"><button v-if="splicedEditing" :key="'forbidden-edit-'+item" type="button" class="splice-token" @click="removeSpliceDraftTag('forbidden',item)">{{ item }}<span class="splice-token__close">×</span></button><span v-else :key="'forbidden-view-'+item" class="splice-token">{{ item }}</span></template><span>。</span></template></p>
+                      <div v-if="splicedEditing" class="splice-rich-editor-shell">
+                        <div class="splice-rich-editor-toolbar">
+                          <span class="splice-rich-editor-toolbar__hint">整段文字均可在任意位置增删改；支持直接粘贴图片</span>
+                          <el-button size="mini" icon="el-icon-picture-outline" @click="addSpliceImageByUrl">通过链接添加图片</el-button>
+                        </div>
+                        <div ref="spliceRichEditor" class="splice-natural-prompt splice-rich-content splice-rich-editor" contenteditable="true" spellcheck="false" @paste="handleSpliceRichPaste" v-html="spliceRichDraftHtml"></div>
+                      </div>
+                      <div v-else class="splice-natural-prompt splice-rich-content splice-rich-view" v-html="spliceRichHtml"></div>
                     </div>
                     <div class="splice-card__footer"><span>来源：{{ spliceSourceSummary }}（仅包含非空字段）</span></div>
                   </article>
@@ -658,7 +673,7 @@
           planningMessage: '请填写企划需求；关键操作后自动保存。', planningMessageType: 'info',
           promptLoading: false, imageLoading: false, showRetryButton: false, promptDialogVisible: false, previewDialogVisible: false,
           acceptanceVisible: false, detailDrawerVisible: false, refineDrawerVisible: false, historyDrawerVisible: false,
-          activePrompt: '', activePromptItemId: '', previewImage: '', previewImageName: '', promptMode: 'ai', splicedPrompt: '', splicedEditing: false, spliceScheme:{category:'',need:'',references:[],textReferences:[],directions:[],constraints:[],forbidden:[]}, spliceEditDraft:{category:'',need:'',references:[],textReferences:[],directions:[],constraints:[],forbidden:[]}, promptPlanningFingerprints:{ai:'',splice:''}, promptOutdatedToastReady:false, promptStorageKey: 'ai-product-design-v12-empty-state-prompt-results', imageScenario: 'success', creativeMessage: '本次计划生成 3 张，成功 3 张，失败 0 张。', creativeMessageType: 'success', failedImageCount: 0,
+          activePrompt: '', activePromptItemId: '', previewImage: '', previewImageName: '', promptMode: 'ai', splicedPrompt: '', spliceRichHtml: '', spliceRichDraftHtml: '', splicedEditing: false, spliceScheme:{category:'',need:'',references:[],textReferences:[],directions:[],constraints:[],forbidden:[]}, spliceEditDraft:{category:'',need:'',references:[],textReferences:[],directions:[],constraints:[],forbidden:[]}, promptPlanningFingerprints:{ai:'',splice:''}, promptOutdatedToastReady:false, promptStorageKey: 'ai-product-design-v12-empty-state-prompt-results', imageScenario: 'success', creativeMessage: '本次计划生成 3 张，成功 3 张，失败 0 张。', creativeMessageType: 'success', failedImageCount: 0,
           categories: ['内裤','文胸','袜子','吊带'], directionOptions: ['少女感','清新耐看','几何撞色','休闲字母'], constraintOptions: ['车缝','随心裁','精梳棉混纺','基础色'], forbiddenOptions: ['复杂印花','浮夸 Logo','禁止与竞品完全一致','禁止人体穿着展示','禁止文字内容','禁止浮夸Logo','禁止竞品复刻','禁止非指定品牌标识'],
           imageKinds: [{key:'sketch',label:'线稿'},{key:'competitor',label:'竞品'},{key:'creative',label:'创意'}],
           planning: { category:'内裤', need:'', competitor:'', directions:[], constraints:[], forbidden:[], images:{sketch:'',competitor:'',creative:''}, imagePreviews:{sketch:'',competitor:'',creative:''}, imageNotes:{sketch:'',competitor:'',creative:''} },
@@ -720,6 +735,8 @@
           this.promptMode='ai';
           this.directions=[];
           this.splicedPrompt='';
+          this.spliceRichHtml='';
+          this.spliceRichDraftHtml='';
           this.splicedEditing=false;
           this.promptPlanningFingerprints={ai:'',splice:''};
           this.spliceScheme={category:'',need:'',references:[],textReferences:[],directions:[],constraints:[],forbidden:[]};
@@ -742,8 +759,8 @@
         previewSpliceReference: function(item){ if(!item||!item.preview)return;this.previewImage=item.preview;this.previewImageName=item.label+'参考图片';this.previewDialogVisible=true; },
         cloneSpliceScheme: function(scheme){ return JSON.parse(JSON.stringify(scheme)); },
         planningFingerprint: function(){ var p=this.planning;var payload={category:p.category,need:(p.need||'').trim(),competitor:(p.competitor||'').trim(),directions:p.directions.slice(),constraints:p.constraints.slice(),forbidden:p.forbidden.slice(),images:{},imageNotes:{}};this.imageKinds.forEach(function(kind){payload.images[kind.key]=[(p.images[kind.key]||''),(p.imagePreviews[kind.key]||'')].join('|');payload.imageNotes[kind.key]=(p.imageNotes[kind.key]||'').trim();});var raw=JSON.stringify(payload);var hash=2166136261;for(var i=0;i<raw.length;i++){hash^=raw.charCodeAt(i);hash=Math.imul(hash,16777619);}return raw.length+'-'+(hash>>>0).toString(36); },
-        persistPromptResults: function(){ try{localStorage.setItem(this.promptStorageKey,JSON.stringify({directions:this.directions,splicedPrompt:this.splicedPrompt,spliceScheme:this.spliceScheme,promptPlanningFingerprints:this.promptPlanningFingerprints,savedAt:new Date().toISOString()}));}catch(e){} },
-        restorePromptResults: function(){ try{var raw=localStorage.getItem(this.promptStorageKey);if(!raw)return;var saved=JSON.parse(raw);if(Array.isArray(saved.directions)&&saved.directions.length)this.directions=saved.directions;if(saved.spliceScheme&&saved.spliceScheme.category){var restored=this.cloneSpliceScheme(saved.spliceScheme);var self=this;restored.references=Array.isArray(restored.references)?restored.references:[];restored.textReferences=Array.isArray(restored.textReferences)?restored.textReferences:[];restored.references.forEach(function(item){if(!item.preview||item.preview.indexOf('blob:')===0)item.preview=self.referencePlaceholder(item.label);if(item.note){var current=restored.textReferences.find(function(note){return note.key===item.key;});if(current)current.note=self.mergeReferenceText(current.note,item.note);else restored.textReferences.push({key:item.key,label:item.label,note:item.note});delete item.note;}});if(restored.competitorSupplement){var competitor=restored.textReferences.find(function(item){return item.key==='competitor';});if(competitor)competitor.note=self.mergeReferenceText(competitor.note,restored.competitorSupplement,'，');else restored.textReferences.push({key:'competitor',label:'竞品',note:restored.competitorSupplement});delete restored.competitorSupplement;}this.spliceScheme=restored;if(typeof saved.splicedPrompt==='string')this.splicedPrompt=this.buildSplicedPromptFromScheme(restored);}if(saved.promptPlanningFingerprints)this.promptPlanningFingerprints=Object.assign({ai:'',splice:''},saved.promptPlanningFingerprints);var currentFingerprint=this.planningFingerprint();if(this.directions.length&&!this.promptPlanningFingerprints.ai)this.promptPlanningFingerprints.ai=currentFingerprint;if(this.hasSplicedPrompt&&!this.promptPlanningFingerprints.splice)this.promptPlanningFingerprints.splice=currentFingerprint;}catch(e){} },
+        persistPromptResults: function(){ try{localStorage.setItem(this.promptStorageKey,JSON.stringify({directions:this.directions,splicedPrompt:this.splicedPrompt,spliceRichHtml:this.spliceRichHtml,spliceScheme:this.spliceScheme,promptPlanningFingerprints:this.promptPlanningFingerprints,savedAt:new Date().toISOString()}));}catch(e){} },
+        restorePromptResults: function(){ try{var raw=localStorage.getItem(this.promptStorageKey);if(!raw)return;var saved=JSON.parse(raw);if(Array.isArray(saved.directions)&&saved.directions.length)this.directions=saved.directions;if(saved.spliceScheme&&saved.spliceScheme.category){var restored=this.cloneSpliceScheme(saved.spliceScheme);var self=this;restored.references=Array.isArray(restored.references)?restored.references:[];restored.textReferences=Array.isArray(restored.textReferences)?restored.textReferences:[];restored.references.forEach(function(item){if(!item.preview||item.preview.indexOf('blob:')===0)item.preview=self.referencePlaceholder(item.label);if(item.note){var current=restored.textReferences.find(function(note){return note.key===item.key;});if(current)current.note=self.mergeReferenceText(current.note,item.note);else restored.textReferences.push({key:item.key,label:item.label,note:item.note});delete item.note;}});if(restored.competitorSupplement){var competitor=restored.textReferences.find(function(item){return item.key==='competitor';});if(competitor)competitor.note=self.mergeReferenceText(competitor.note,restored.competitorSupplement,'，');else restored.textReferences.push({key:'competitor',label:'竞品',note:restored.competitorSupplement});delete restored.competitorSupplement;}this.spliceScheme=restored;this.spliceRichHtml=typeof saved.spliceRichHtml==='string'&&!/src=[\"']blob:/i.test(saved.spliceRichHtml)?this.sanitizeSpliceRichHtml(saved.spliceRichHtml):this.buildSpliceRichHtmlFromScheme(restored);this.spliceRichDraftHtml=this.spliceRichHtml;this.splicedPrompt=this.spliceRichPlainText(this.spliceRichHtml);}if(saved.promptPlanningFingerprints)this.promptPlanningFingerprints=Object.assign({ai:'',splice:''},saved.promptPlanningFingerprints);var currentFingerprint=this.planningFingerprint();if(this.directions.length&&!this.promptPlanningFingerprints.ai)this.promptPlanningFingerprints.ai=currentFingerprint;if(this.hasSplicedPrompt&&!this.promptPlanningFingerprints.splice)this.promptPlanningFingerprints.splice=currentFingerprint;}catch(e){} },
         runCurrentPromptMode: function(){ if(this.promptMode==='splice')this.openSplicedPrompt();else this.generatePrompts(); },
         switchPromptMode: function(mode){
           if(mode===this.promptMode)return;
@@ -797,6 +814,51 @@
           if(scheme.forbidden.length)clauses.push('禁止项包含'+scheme.forbidden.join('、')+'。');
           return clauses.join('');
         },
+        escapeSpliceRichText: function(value){ return String(value==null?'':value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); },
+        escapeSpliceRichAttribute: function(value){ return this.escapeSpliceRichText(value).replace(/"/g,'&quot;').replace(/'/g,'&#39;'); },
+        spliceTagPrompt: function(item){
+          var prompts={
+            '夏天':'突出轻薄、透气与清爽体感','少女感':'以柔和配色、轻盈比例与年轻化细节营造自然少女气质','清新':'采用明亮低饱和色彩与简洁干净的视觉表达','清新耐看':'采用低饱和配色、简洁细节与适合日常穿着的耐看表达','休闲字母':'使用克制的字母元素形成轻松休闲的视觉点缀','几何撞色':'通过规则几何色块与克制撞色形成清晰视觉层次','车缝':'使用常规车缝完成稳定连接与整洁收边','随心裁':'采用无痕切边或贴合工艺，使边缘平整并减少勒痕','精梳棉混纺':'兼顾柔软亲肤、透气吸湿与适度弹性','基础色':'使用低饱和基础色，保证日常搭配与耐看性','复杂印花':'避免高密度、多层叠加或难以识别的复杂印花','浮夸 Logo':'避免大面积、强视觉存在感的品牌标识','禁止浮夸Logo':'避免大面积、强视觉存在感的品牌标识','禁止与竞品完全一致':'竞品仅用于方向参考，不复制具体图案、结构与识别元素','禁止竞品复刻':'竞品仅用于方向参考，不复制具体图案、结构与识别元素','禁止人体穿着展示':'仅展示产品平铺、挂拍或局部结构，不呈现人体穿着','禁止文字内容':'画面中不出现任何文字、字母或可识别字符','禁止非指定品牌标识':'不出现未指定品牌名称、商标或可识别标志'
+          };
+          return prompts[item]||'围绕该标签补充清晰、可执行的视觉与工艺要求';
+        },
+        spliceTagDetailedText: function(item){ return item+'（'+this.spliceTagPrompt(item)+'）'; },
+        buildSpliceRichHtmlFromScheme: function(scheme){
+          var self=this;var parts=[];var esc=function(value){return self.escapeSpliceRichText(value);};
+          parts.push('本次设计品类为'+esc(scheme.category)+'，企划需求是'+esc(scheme.need)+'。');
+          var images={},notes={};(scheme.references||[]).forEach(function(item){images[item.key]=item;});(scheme.textReferences||[]).forEach(function(item){notes[item.key]=item;});
+          var rows=this.imageKinds.map(function(kind){var image=images[kind.key];var note=notes[kind.key]&&notes[kind.key].note?notes[kind.key].note.trim():'';return image||note?{key:kind.key,label:kind.label,image:image,note:note}:null;}).filter(Boolean);
+          if(rows.length){var referenceParts=rows.map(function(item,index){var wording=self.spliceReferenceWording(item.key,index>0);if(item.image){var src=self.escapeSpliceRichAttribute(item.image.preview||self.referencePlaceholder(item.label));var imageHtml=esc(wording.imageLead)+'<img class="splice-rich-inline-image" src="'+src+'" alt="'+self.escapeSpliceRichAttribute(item.label+'参考图')+'">'+esc(wording.imageTail);return item.note?imageHtml+'，'+esc(wording.noteLead+item.note):imageHtml;}return esc(wording.noteLead+item.note);});parts.push(referenceParts.join('；')+'。');}
+          if((scheme.directions||[]).length)parts.push('创意方向聚焦'+scheme.directions.map(function(item){return esc(self.spliceTagDetailedText(item));}).join('、')+((scheme.constraints||[]).length||(scheme.forbidden||[]).length?'；':'。'));
+          if((scheme.constraints||[]).length)parts.push('工艺与面料上采用'+scheme.constraints.map(function(item){return esc(self.spliceTagDetailedText(item));}).join('、')+'做法'+((scheme.forbidden||[]).length?'；':'。'));
+          if((scheme.forbidden||[]).length)parts.push('禁止项包含'+scheme.forbidden.map(function(item){return esc(self.spliceTagDetailedText(item));}).join('、')+'。');
+          return parts.join('');
+        },
+        sanitizeSpliceRichHtml: function(html){
+          var box=document.createElement('div');box.innerHTML=html||'';
+          Array.prototype.forEach.call(box.querySelectorAll('script,style,iframe,object,embed,link,meta'),function(node){if(node.parentNode)node.parentNode.removeChild(node);});
+          Array.prototype.forEach.call(box.querySelectorAll('*'),function(node){
+            if(node.tagName==='IMG'){
+              var src=(node.getAttribute('src')||'').trim();if(!/^(https?:\/\/|data:image\/|blob:)/i.test(src)){if(node.parentNode)node.parentNode.removeChild(node);return;}
+              var alt=node.getAttribute('alt')||'参考图片';Array.prototype.slice.call(node.attributes).forEach(function(attribute){node.removeAttribute(attribute.name);});node.setAttribute('src',src);node.setAttribute('alt',alt);node.setAttribute('class','splice-rich-inline-image');
+            }else Array.prototype.slice.call(node.attributes).forEach(function(attribute){node.removeAttribute(attribute.name);});
+          });
+          return box.innerHTML;
+        },
+        spliceRichPlainText: function(html){ var box=document.createElement('div');box.innerHTML=html||'';Array.prototype.forEach.call(box.querySelectorAll('img'),function(image){image.replaceWith(document.createTextNode('【参考图片】'));});return (box.innerText||box.textContent||'').replace(/\u00a0/g,' ').replace(/[ \t]+/g,' ').replace(/\n{3,}/g,'\n\n').trim(); },
+        handleSpliceRichPaste: function(event){
+          var clipboard=event.clipboardData||window.clipboardData;var items=clipboard&&clipboard.items?Array.prototype.slice.call(clipboard.items):[];var imageItem=items.find(function(item){return item.type&&item.type.indexOf('image/')===0;});
+          if(imageItem){event.preventDefault();var file=imageItem.getAsFile();if(!file)return;var self=this;var reader=new FileReader();reader.onload=function(loadEvent){self.insertSpliceRichImage(loadEvent.target.result,'粘贴的参考图片');self.$message.success('图片已粘贴到方案中');};reader.readAsDataURL(file);return;}
+          if(clipboard){event.preventDefault();document.execCommand('insertText',false,clipboard.getData('text/plain'));}
+        },
+        captureSpliceInsertRange: function(){ var editor=this.$refs.spliceRichEditor;var selection=window.getSelection();this.splicePendingRange=selection&&selection.rangeCount&&editor&&editor.contains(selection.anchorNode)?selection.getRangeAt(0).cloneRange():null; },
+        insertSpliceRichImage: function(src,alt){
+          var editor=this.$refs.spliceRichEditor;if(!editor)return;var image=document.createElement('img');image.src=src;image.alt=alt||'新增参考图片';image.className='splice-rich-inline-image';var before=document.createTextNode('\u00a0');var after=document.createTextNode('\u00a0');var fragment=document.createDocumentFragment();fragment.appendChild(before);fragment.appendChild(image);fragment.appendChild(after);
+          var range=this.splicePendingRange;var selection=window.getSelection();if(!range&&selection&&selection.rangeCount&&editor.contains(selection.anchorNode))range=selection.getRangeAt(0);if(range&&editor.contains(range.commonAncestorContainer)){range.deleteContents();range.insertNode(fragment);range.setStartAfter(after);range.collapse(true);selection.removeAllRanges();selection.addRange(range);}else{editor.appendChild(fragment);this.placeSpliceCaretAtEnd(editor);}this.splicePendingRange=null;editor.focus();
+        },
+        addSpliceImageByUrl: function(){
+          var self=this;this.captureSpliceInsertRange();this.$prompt('请输入可公开访问的图片链接','通过链接添加图片',{confirmButtonText:'插入图片',cancelButtonText:'取消',inputPlaceholder:'https://example.com/image.jpg',inputPattern:/^https?:\/\/.+/i,inputErrorMessage:'请输入以 http:// 或 https:// 开头的图片链接'}).then(function(result){self.insertSpliceRichImage(result.value.trim(),'链接参考图片');self.$message.success('图片已插入方案');}).catch(function(){self.splicePendingRange=null;});
+        },
         buildSplicedPrompt: function(){ return this.buildSplicedPromptFromScheme(this.createSpliceSchemeFromPlanning()); },
         openSplicedPrompt: function(){
           if(this.isViewer){this.$message.error('暂无权限执行此操作，请联系管理员');return;}
@@ -804,6 +866,8 @@
           this.spliceScheme=this.createSpliceSchemeFromPlanning();
           this.spliceEditDraft=this.cloneSpliceScheme(this.spliceScheme);
           this.splicedPrompt=this.buildSplicedPromptFromScheme(this.spliceScheme);
+          this.spliceRichHtml=this.buildSpliceRichHtmlFromScheme(this.spliceScheme);
+          this.spliceRichDraftHtml=this.spliceRichHtml;
           this.$set(this.promptPlanningFingerprints,'splice',this.planningFingerprint());
           this.splicedEditing=false;
           this.promptMode='splice';
@@ -813,31 +877,20 @@
           this.persistPromptResults();
           this.$message.success('拼接提示词已生成并保存');
         },
-        beginSpliceEdit: function(){ if(this.isViewer){this.$message.error('暂无权限执行此操作，请联系管理员');return;}this.spliceEditDraft=this.cloneSpliceScheme(this.spliceScheme);this.splicedEditing=true; },
-        cancelSpliceEdit: function(){ this.spliceEditDraft=this.cloneSpliceScheme(this.spliceScheme);this.splicedEditing=false;this.$message.info('已取消编辑，方案内容未变更'); },
-        spliceEditableValue: function(element,limit){ return (element&&element.innerText?element.innerText:'').replace(/\u00a0/g,' ').replace(/[\r\n]+/g,' ').slice(0,limit); },
+        beginSpliceEdit: function(){ var self=this;if(this.isViewer){this.$message.error('暂无权限执行此操作，请联系管理员');return;}this.spliceRichDraftHtml=this.spliceRichHtml||this.buildSpliceRichHtmlFromScheme(this.spliceScheme);this.splicedEditing=true;this.$nextTick(function(){var editor=self.$refs.spliceRichEditor;if(editor){editor.focus();self.placeSpliceCaretAtEnd(editor);}}); },
+        cancelSpliceEdit: function(){ this.spliceRichDraftHtml=this.spliceRichHtml;this.splicePendingRange=null;this.splicedEditing=false;this.$message.info('已取消编辑，方案内容未变更'); },
         placeSpliceCaretAtEnd: function(element){ var selection=window.getSelection();var range=document.createRange();range.selectNodeContents(element);range.collapse(false);selection.removeAllRanges();selection.addRange(range); },
-        limitSpliceEditable: function(event,limit){ var element=event.currentTarget;var value=(element.innerText||'').replace(/\u00a0/g,' ');if(value.length<=limit)return;element.innerText=value.slice(0,limit);this.placeSpliceCaretAtEnd(element); },
-        commitSpliceDraftNeed: function(event){ this.spliceEditDraft.need=this.spliceEditableValue(event.currentTarget,500); },
-        commitSpliceDraftNote: function(item,event){ if(item)item.note=this.spliceEditableValue(event.currentTarget,300); },
-        syncSpliceEditableFields: function(){ var needElement=this.$el.querySelector('[data-splice-edit-field="need"]');if(needElement)this.spliceEditDraft.need=this.spliceEditableValue(needElement,500);var self=this;Array.prototype.forEach.call(this.$el.querySelectorAll('[data-splice-note-key]'),function(element){var key=element.getAttribute('data-splice-note-key');var item=self.spliceEditDraft.textReferences.find(function(row){return row.key===key;});if(item)item.note=self.spliceEditableValue(element,300);}); },
-        pasteSplicePlainText: function(event){ event.preventDefault();var clipboard=event.clipboardData||window.clipboardData;var value=clipboard?clipboard.getData('text/plain').replace(/[\r\n]+/g,' '):'';document.execCommand('insertText',false,value); },
         saveSplicedPrompt: function(){
-          this.syncSpliceEditableFields();
-          if(!this.spliceEditDraft.need.trim()){this.$message.error('企划需求不能为空');return;}
-          this.spliceEditDraft.need=this.spliceEditDraft.need.trim().replace(/[。；;]+$/,'');
-          this.spliceEditDraft.references=this.spliceEditDraft.references.filter(function(item){return Boolean(item.preview);}).map(function(item){return {key:item.key,label:item.label,preview:item.preview};});
-          this.spliceEditDraft.textReferences=this.spliceEditDraft.textReferences.filter(function(item){return Boolean((item.note||'').trim());}).map(function(item){var next=Object.assign({},item);next.note=next.note.trim().replace(/[，,；;。\.\s]+$/,'');return next;});
-          this.spliceScheme=this.cloneSpliceScheme(this.spliceEditDraft);
-          this.splicedPrompt=this.buildSplicedPromptFromScheme(this.spliceScheme);
+          var editor=this.$refs.spliceRichEditor;var cleanHtml=this.sanitizeSpliceRichHtml(editor?editor.innerHTML:this.spliceRichDraftHtml);var plainText=this.spliceRichPlainText(cleanHtml);var probe=document.createElement('div');probe.innerHTML=cleanHtml;
+          if(!plainText&&!probe.querySelector('img')){this.$message.error('方案内容不能为空');return;}
+          this.spliceRichHtml=cleanHtml;
+          this.spliceRichDraftHtml=cleanHtml;
+          this.splicedPrompt=plainText;
+          this.splicePendingRange=null;
           this.splicedEditing=false;
           this.persistPromptResults();
           this.$message.success('拼接方案已保存');
         },
-        removeSpliceDraftTag: function(group,item){ if(this.isViewer)return;this.$set(this.spliceEditDraft,group,this.spliceEditDraft[group].filter(function(value){return value!==item;})); },
-        removeSpliceDraftReference: function(key){ if(this.isViewer)return;this.spliceEditDraft.references=this.spliceEditDraft.references.filter(function(item){return item.key!==key;});this.spliceEditDraft.textReferences=this.spliceEditDraft.textReferences.filter(function(item){return item.key!==key||Boolean((item.note||'').trim());}); },
-        removeSpliceDraftTextReference: function(key){ if(this.isViewer)return;this.spliceEditDraft.textReferences=this.spliceEditDraft.textReferences.filter(function(item){return item.key!==key;}); },
-        addSpliceDraftTextReference: function(key,label){ if(this.isViewer)return;if(!this.spliceEditDraft.textReferences.some(function(item){return item.key===key;}))this.spliceEditDraft.textReferences.push({key:key,label:label,note:''}); },
         copyText: function(text,successMessage){ var self=this;function fallback(){var area=document.createElement('textarea');area.value=text;area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();try{document.execCommand('copy');self.$message.success(successMessage);}catch(e){self.$message.error('复制失败，请重试');}document.body.removeChild(area);}if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(text).then(function(){self.$message.success(successMessage);}).catch(fallback);}else{fallback();} },
         validatePlanningRequired: function(){
           if(!this.planning.category){ this.$message.error('请选择品类'); return false; }
